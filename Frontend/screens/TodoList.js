@@ -1,36 +1,83 @@
-import React from 'react';
-import { StyleSheet, View, Text, Button, FlatList, TouchableOpacity } from 'react-native';
+import React, { useEffect } from 'react';
+import { StyleSheet, View, Text, Button, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSelector, useDispatch } from 'react-redux';
-import { removeTodo, toggleTodo } from '../actions/todoActions';
+import { setTodos, removeTodo } from '../actions/todoActions';
 
 export default function TodoList() {
   const navigation = useNavigation();
   const todos = useSelector(state => state.todos);
   const dispatch = useDispatch();
 
+  useEffect(() => {
+    const fetchTodos = async () => {
+      try {
+        const response = await fetch('http://localhost:3000/todos');
+        const data = await response.json();
+        dispatch(setTodos(data));
+      } catch (error) {
+        Alert.alert('Error', 'Failed to load todos');
+      }
+    };
+
+    fetchTodos();
+  }, []);
+
+  const handleToggleTodo = async (id) => {
+    try {
+      const response = await fetch(`http://localhost:3000/todos/${id}/toggle`, {
+        method: 'PATCH',
+      });
+
+      if (response.ok) {
+        const updatedTodo = await response.json();
+        dispatch(setTodos(todos.map(todo => (todo._id === id ? updatedTodo : todo))));
+      } else {
+        Alert.alert('Error', 'Failed to toggle todo');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to toggle todo');
+    }
+  };
+
+  const handleRemoveTodo = async (id) => {
+    try {
+      const response = await fetch(`http://your-server-address/todos/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        dispatch(removeTodo(id));
+      } else {
+        Alert.alert('Error', 'Failed to remove todo');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to remove todo');
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Todo List</Text>
       <FlatList
         data={todos}
-        keyExtractor={(item, index) => index.toString()}
-        renderItem={({ item, index }) => (
+        keyExtractor={(item) => item._id.toString()}
+        renderItem={({ item }) => (
           <View style={styles.todoItem}>
-            <TouchableOpacity onPress={() => dispatch(toggleTodo(index))}>
+            <TouchableOpacity onPress={() => handleToggleTodo(item._id)}>
               <Text
                 style={[
                   styles.todoText,
                   { textDecorationLine: item.completed ? 'line-through' : 'none' },
                 ]}
               >
-                {item.name}
+                {item.title}
               </Text>
               <Text style={styles.todoDescription}>{item.description}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.removeButton}
-              onPress={() => dispatch(removeTodo(index))}
+              onPress={() => handleRemoveTodo(item._id)}
             >
               <Text style={styles.removeButtonText}>Remove</Text>
             </TouchableOpacity>
@@ -49,7 +96,7 @@ export default function TodoList() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f0f8ff', // Light blue background
+    backgroundColor: '#f0f8ff',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
@@ -57,11 +104,11 @@ const styles = StyleSheet.create({
   header: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#007bff', // Darker blue text color for header
+    color: '#007bff',
     marginBottom: 20,
   },
   todoItem: {
-    backgroundColor: '#e0f7ff', // Soft blue background for each todo item
+    backgroundColor: '#e0f7ff',
     padding: 15,
     marginVertical: 10,
     borderRadius: 8,
@@ -77,14 +124,14 @@ const styles = StyleSheet.create({
   },
   todoText: {
     fontSize: 18,
-    color: '#005f9e', // Blue color for the todo text
+    color: '#005f9e',
   },
   todoDescription: {
     fontSize: 14,
-    color: '#6a9ebf', // Lighter blue color for the description text
+    color: '#6a9ebf',
   },
   removeButton: {
-    backgroundColor: '#ff6b6b', // Red color for remove button
+    backgroundColor: '#ff6b6b',
     padding: 5,
     borderRadius: 5,
     alignItems: 'center',
@@ -93,6 +140,6 @@ const styles = StyleSheet.create({
   },
   removeButtonText: {
     color: '#fff',
-    fontSize: 12, // Smaller text for remove button
+    fontSize: 12,
   },
 });

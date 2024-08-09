@@ -1,25 +1,31 @@
-import React, { useState } from 'react';  // lets you add state to your functional components.
-import { StyleSheet, View, Text, TextInput, Button } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, View, Text, TextInput, Button, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { useDispatch } from 'react-redux'; // allows you to dispatch actions to the Redux store.
-import { addTodo } from '../actions/todoActions';
 
 export default function AddTodo() {
-
-  //State Management
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-
-  const dispatch = useDispatch();
   const navigation = useNavigation();
 
-  
-// This function is triggered when the user presses the "Add Todo" button. 
-// It dispatches the addTodo action to the Redux store and then navigates back 
-// to the previous screen (usually the Todo list screen).
-  const handleAddTodo = () => { 
-    dispatch(addTodo(name, description));
-    navigation.goBack();
+  const handleAddTodo = async () => {
+    try {
+      const response = await fetch('http://localhost:3000/todos', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ title: name, description }),
+      });
+
+      if (response.ok) {
+        navigation.goBack();
+      } else {
+        const data = await response.json();
+        Alert.alert('Error', data.error || 'An error occurred');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to add todo');
+    }
   };
 
   return (
