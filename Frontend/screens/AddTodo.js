@@ -1,12 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, TextInput, Button, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import axios from 'axios';
 
 export default function AddTodo() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [weather, setWeather] = useState('');
   const navigation = useNavigation();
 
+  // Function to fetch weather data
+  const fetchWeather = async () => {
+    try {
+      const response = await axios.get('http://api.openweathermap.org/data/2.5/weather?q=Tartu&appid=fc2dd765b55ad13fd78e622ee10ebf97&units=metric');
+      const temperature = response.data.main.temp;
+      setWeather(`Tartu: ${temperature} °C`);
+    } catch (error) {
+      console.error('Error fetching weather:', error);
+      setWeather('Unable to fetch weather data');
+    }
+  };
+
+  // Fetch weather data when the component mounts
+  useEffect(() => {
+    fetchWeather();
+  }, []);
+
+  // Handle adding a new todo
   const handleAddTodo = async () => {
     try {
       const response = await fetch('http://localhost:3000/todos', {
@@ -31,6 +51,7 @@ export default function AddTodo() {
   return (
     <View style={styles.container}>
       <Text>Add a New Todo</Text>
+      <Text>{weather}</Text>
       <TextInput
         style={styles.input}
         placeholder="Name"
